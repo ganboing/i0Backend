@@ -1,0 +1,47 @@
+#include "i0MCInstrLower.h"
+#include "i0AsmPrinter.h"
+#include "llvm/Support/ErrorHandling.h"
+
+namespace llvm{
+
+MCOperand i0MCInstLower::LowerOperand(const MachineOperand& MO) const {
+	auto MOTy = MO.getType();
+
+  switch (MOTy) {
+  default: llvm_unreachable("unknown operand type");
+  case MachineOperand::MO_Register:
+    // Ignore all implicit register operands.
+    if (MO.isImplicit()) break;
+    return MCOperand::CreateReg(MO.getReg());
+  case MachineOperand::MO_Immediate:
+    return MCOperand::CreateImm(MO.getImm());
+  case MachineOperand::MO_MachineBasicBlock:
+  case MachineOperand::MO_ExternalSymbol:
+  case MachineOperand::MO_JumpTableIndex:
+  case MachineOperand::MO_BlockAddress:
+  case MachineOperand::MO_GlobalAddress:
+    //return LowerSymbolOperand(MO, MOTy);
+  case MachineOperand::MO_RegisterMask:
+    break;
+ }
+
+  return MCOperand();
+}
+
+i0MCInstLower::i0MCInstLower(i0AsmPrinter& printer):
+		asmPrinter(printer)
+{}
+
+void i0MCInstLower::Lower(const MachineInstr* MI, MCInst& OutMI) const{
+	OutMI.setOpcode(MI->getOpcode());
+
+	  for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+	    const MachineOperand &MO = MI->getOperand(i);
+	    MCOperand MCOp = LowerOperand(MO);
+
+	    if (MCOp.isValid())
+	      OutMI.addOperand(MCOp);
+	  }
+}
+
+}

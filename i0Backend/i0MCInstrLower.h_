@@ -1,0 +1,21 @@
+#ifndef LIB_TARGET_I0_I0MCINSTRLOWER_H_
+#define LIB_TARGET_I0_I0MCINSTRLOWER_H_
+
+#include "llvm/CodeGen/MachineOperand.h"
+#include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineInstr.h"
+
+namespace llvm {
+
+class i0AsmPrinter;
+
+class i0MCInstLower {
+	i0AsmPrinter& asmPrinter;
+public:
+	i0MCInstLower(i0AsmPrinter& printer);
+	void Lower(const MachineInstr* MI, MCInst& OutMI) const;
+	MCOperand LowerOperand(const MachineOperand& MO) const;
+};
+}
+
+#endif /* LIB_TARGET_I0_I0MCINSTRLOWER_H_ */
