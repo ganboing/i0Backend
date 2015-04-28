@@ -19,20 +19,20 @@ void* _i0_spawn(void* fi, const void* using_range, const void* watching_range)
 /*
 Memory Layout for the stack of the newly created runner:
 
-RunnerWrapperInfo_t			*********************
-							*  ParaPackSize     * ----> sizeof(RunnerWrapperInfo_t) + sizeof(RunnerSelfInfo_t)
-							*-------------------*
-							*  EntryPointHelper * ----> Entry Helper to extract Parameters
-							*********************
-RunnerSelfInfo_t			*  RealEntryPoint   * ----> The EntryPoint Passed By User
-							*-------------------*
-							*					*
-							*  (ParaMeters)		* ----> The Actual Parameters
-							*					*
-							*********************
+RunnerWrapperInfo_t         *********************
+                            *  ParaPackSize     * ----> sizeof(RunnerWrapperInfo_t) + sizeof(RunnerSelfInfo_t)
+                            *-------------------*
+                            *  EntryPointHelper * ----> Entry Helper to extract Parameters
+                            *********************
+RunnerSelfInfo_t            *  RealEntryPoint   * ----> The EntryPoint Passed By User
+                            *-------------------*
+                            *                   *
+                            *  (ParaMeters)     * ----> The Actual Parameters
+                            *                   *
+                            *********************
 
-		The Crt0 Shall Adjust the Stack Pointer Upon a new runner starts and pass the 
-		pointer to "ParaMeters" to the "EntryPointHelper" Function
+The Crt0 Shall Adjust the Stack Pointer Upon a new runner starts and pass the 
+pointer to "ParaMeters" to the "EntryPointHelper" Function
 */
 
 /*
