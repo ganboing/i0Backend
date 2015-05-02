@@ -1,0 +1,129 @@
+From f58206eebaec775b334fc7ef7ac96ab557dd3c8e Mon Sep 17 00:00:00 2001
+From: ganboing <ganboing@gmail.com>
+Date: Tue, 28 Apr 2015 11:12:09 +0800
+Subject: [PATCH] i0 llvm patch
+
+---
+ CMakeLists.txt                                | 3 ++-
+ cmake/config-ix.cmake                         | 2 ++
+ include/llvm/ADT/Triple.h                     | 3 ++-
+ lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp | 2 +-
+ lib/Support/Triple.cpp                        | 3 +++
+ lib/Target/LLVMBuild.txt                      | 2 +-
+ lib/Target/i0                                 | 1 +
+ 7 files changed, 12 insertions(+), 4 deletions(-)
+ create mode 120000 lib/Target/i0
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index cfa32cf..6c8d69f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -51,7 +51,7 @@ set(LLVM_VERSION_MINOR 6)
+ set(LLVM_VERSION_PATCH 0)
+ 
+ if (NOT PACKAGE_VERSION)
+-  set(PACKAGE_VERSION "${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}")
++  set(PACKAGE_VERSION "${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}svn")
+ endif()
+ 
+ option(LLVM_INSTALL_TOOLCHAIN_ONLY "Only include toolchain files in the 'install' target." OFF)
+@@ -168,6 +168,7 @@ set(LLVM_ALL_TARGETS
+   SystemZ
+   X86
+   XCore
++  i0
+   )
+ 
+ # List of targets with JIT support:
+diff --git a/cmake/config-ix.cmake b/cmake/config-ix.cmake
+index f806d9c..aa73ac6 100755
+--- a/cmake/config-ix.cmake
++++ b/cmake/config-ix.cmake
+@@ -367,6 +367,8 @@ elseif (LLVM_NATIVE_ARCH MATCHES "hexagon")
+   set(LLVM_NATIVE_ARCH Hexagon)
+ elseif (LLVM_NATIVE_ARCH MATCHES "s390x")
+   set(LLVM_NATIVE_ARCH SystemZ)
++elseif (LLVM_NATIVE_ARCH MATCHES "i0")
++  set(LLVM_NATIVE_ARCH i0)
+ else ()
+   message(FATAL_ERROR "Unknown architecture ${LLVM_NATIVE_ARCH}")
+ endif ()
+diff --git a/include/llvm/ADT/Triple.h b/include/llvm/ADT/Triple.h
+index 8a68599..8ef2527 100644
+--- a/include/llvm/ADT/Triple.h
++++ b/include/llvm/ADT/Triple.h
+@@ -80,7 +80,8 @@ public:
+     hsail64,    // AMD HSAIL with 64-bit pointers
+     spir,       // SPIR: standard portable IR for OpenCL 32-bit version
+     spir64,     // SPIR: standard portable IR for OpenCL 64-bit version
+-    kalimba     // Kalimba: generic kalimba
++    kalimba,    // Kalimba: generic kalimba
++    i0          // The i0 backend
+   };
+   enum SubArchType {
+     NoSubArch,
+diff --git a/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp b/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
+index ef54525..1ba2e1f 100644
+--- a/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
++++ b/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
+@@ -656,7 +656,7 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
+   (void)BlockNumber;
+   bool MatchFilterBB = false; (void)MatchFilterBB;
+ #ifndef NDEBUG
+-  MatchFilterBB = (!FilterDAGBasicBlockName.empty() &&
++  MatchFilterBB = (FilterDAGBasicBlockName.empty() ||
+                    FilterDAGBasicBlockName ==
+                        FuncInfo->MBB->getBasicBlock()->getName().str());
+ #endif
+diff --git a/lib/Support/Triple.cpp b/lib/Support/Triple.cpp
+index 0838e90..b1ad31b 100644
+--- a/lib/Support/Triple.cpp
++++ b/lib/Support/Triple.cpp
+@@ -54,6 +54,7 @@ const char *Triple::getArchTypeName(ArchType Kind) {
+   case spir:        return "spir";
+   case spir64:      return "spir64";
+   case kalimba:     return "kalimba";
++  case i0:          return "i0";
+   }
+ 
+   llvm_unreachable("Invalid ArchType!");
+@@ -895,6 +896,7 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
+   case llvm::Triple::amdil64:
+   case llvm::Triple::hsail64:
+   case llvm::Triple::spir64:
++  case llvm::Triple::i0:
+     return 64;
+   }
+   llvm_unreachable("Invalid architecture value");
+@@ -922,6 +924,7 @@ Triple Triple::get32BitArchVariant() const {
+   case Triple::msp430:
+   case Triple::systemz:
+   case Triple::ppc64le:
++  case Triple::i0:
+     T.setArch(UnknownArch);
+     break;
+ 
+diff --git a/lib/Target/LLVMBuild.txt b/lib/Target/LLVMBuild.txt
+index 1b0837c..88a4bfe 100644
+--- a/lib/Target/LLVMBuild.txt
++++ b/lib/Target/LLVMBuild.txt
+@@ -16,7 +16,7 @@
+ ;===------------------------------------------------------------------------===;
+ 
+ [common]
+-subdirectories = ARM AArch64 CppBackend Hexagon MSP430 NVPTX Mips PowerPC R600 Sparc SystemZ X86 XCore
++subdirectories = ARM AArch64 CppBackend Hexagon MSP430 NVPTX Mips PowerPC R600 Sparc SystemZ X86 XCore i0
+ 
+ ; This is a special group whose required libraries are extended (by llvm-build)
+ ; with the best execution engine (the native JIT, if available, or the
+diff --git a/lib/Target/i0 b/lib/Target/i0
+new file mode 120000
+index 0000000..a54891b
+--- /dev/null
++++ b/lib/Target/i0
+@@ -0,0 +1 @@
++../../../../i0/i0Backend
+\ No newline at end of file
+-- 
+1.9.1
+
