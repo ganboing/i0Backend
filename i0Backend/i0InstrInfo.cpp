@@ -37,7 +37,7 @@ void i0InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
 		MachineBasicBlock::iterator I, unsigned SrcReg, bool isKill, int FI,
 		const TargetRegisterClass *RC, const TargetRegisterInfo *TRI) const {
 
-	dbgs() << "stotrRegToStack " << SrcReg << " to FI " << FI << "\n";
+	dbgs() << "storeRegToStack " << SrcReg << " to FI " << FI << "\n";
 	MachineFunction& MF = *MBB.getParent();
 	MachineFrameInfo& MFI = *MF.getFrameInfo();
 	unsigned Align = MFI.getObjectAlignment(FI);
@@ -69,7 +69,7 @@ void i0InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
 	DebugLoc DL;
 	if (I != MBB.end())
 		DL = I->getDebugLoc();
-	BuildMI(MBB, I, DL, get(i0::Loadr_64)).addReg(DestReg).addFrameIndex(FI).addImm(
+	BuildMI(MBB, I, DL, get(i0::Loadr_64), DestReg).addFrameIndex(FI).addImm(
 			0).addMemOperand(MMO);
 
 }

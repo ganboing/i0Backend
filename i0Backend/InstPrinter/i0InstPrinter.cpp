@@ -18,6 +18,23 @@ void i0InstPrinter::printInst(const MCInst *MI, raw_ostream &O,
 	printAnnotation(O, Annot);
 }
 
+static const char* expr_kind_str(MCExpr::ExprKind kind){
+	switch(kind){
+	case MCExpr::Binary:
+		return "Binary";
+	case MCExpr::Constant:
+		return "Constant";
+	case MCExpr::SymbolRef:
+		return "SymRef";
+	case MCExpr::Target:
+		return "Target";
+	case MCExpr::Unary:
+		return "Unary";
+	default:
+		return nullptr;
+	}
+}
+
 void i0InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 		raw_ostream &O) {
 	const MCOperand &Op = MI->getOperand(OpNo);
@@ -26,7 +43,9 @@ void i0InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 	} else if (Op.isImm()) {
 		O << Op.getImm();
 	} else if (Op.isExpr()) {
-		O << "<expr to print>\n";
+		const MCExpr& expr = Op.getExpr();
+		O << "encountered a " << expr_kind_str(expr.Kind) << " expression\n";
+		O << "<todo>\n";
 	}
 
 }

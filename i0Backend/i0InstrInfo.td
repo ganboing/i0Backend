@@ -198,12 +198,16 @@ defm SRA : ArithLogic64<0xf5, "sra ", sra>;
 defm SRL : ArithLogic64<0xf6, "srl ", srl>;
 
 defm BLE : BranchCC64<0x00, "ble ", setle>;
-defm BEQ : BranchCC64<0x01, "beq ", seteq>;
-defm BLT : BranchCC64<0x02, "blt ", setlt>;
-defm BNE : BranchCC64<0x03, "bne ", setne>;
-defm BULE : BranchCC64<0x08, "bule ", setule>;
-defm BUEQ : BranchCC64<0x09, "bueq ", setueq>;
-defm BULT : BranchCC64<0x0a, "bult ", setult>;
+defm BGE : BranchCC64<0x01, "bge ", setge>;
+defm BEQ : BranchCC64<0x02, "beq ", seteq>;
+defm BLT : BranchCC64<0x03, "blt ", setlt>;
+defm BGT : BranchCC64<0x04, "bgt ", setgt>;
+defm BNE : BranchCC64<0x05, "bne ", setne>;
+defm BULE : BranchCC64<0x06, "bule ", setule>;
+defm BUGE : BranchCC64<0x07, "buge ", setuge>;
+defm BUEQ : BranchCC64<0x08, "bueq ", setueq>;
+defm BULT : BranchCC64<0x09, "bult ", setult>;
+defm BUGT : BranchCC64<0x0a, "bugt ", setugt>;
 defm BUNE : BranchCC64<0x0b, "bune ", setune>;
 
 defm SETLE : Setcc64<0xf7, "setle ", setle>;

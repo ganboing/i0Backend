@@ -26,6 +26,7 @@ i0TargetLowering::i0TargetLowering(i0TargetMachine& TM, const i0Subtarget& STI) 
 	setBooleanContents(ZeroOrOneBooleanContent);
 	setBooleanVectorContents(ZeroOrNegativeOneBooleanContent);
 
+	setOperationAction(ISD::BR_CC, MVT::i64, Expand);
 	setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
 
 	setStackPointerRegisterToSaveRestore(i0::SPq);
