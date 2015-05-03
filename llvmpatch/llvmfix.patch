@@ -1,0 +1,25 @@
+From 64090e9f76ba42accc5ccf285e85474ff24f9897 Mon Sep 17 00:00:00 2001
+From: ganboing <ganboing@gmail.com>
+Date: Tue, 28 Apr 2015 11:12:09 +0800
+Subject: [PATCH] fix dag graph dump problem
+
+---
+ lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp b/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
+index ef54525..1ba2e1f 100644
+--- a/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
++++ b/lib/CodeGen/SelectionDAG/SelectionDAGISel.cpp
+@@ -656,7 +656,7 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
+   (void)BlockNumber;
+   bool MatchFilterBB = false; (void)MatchFilterBB;
+ #ifndef NDEBUG
+-  MatchFilterBB = (!FilterDAGBasicBlockName.empty() &&
++  MatchFilterBB = (FilterDAGBasicBlockName.empty() ||
+                    FilterDAGBasicBlockName ==
+                        FuncInfo->MBB->getBasicBlock()->getName().str());
+ #endif
+-- 
+1.9.1
+
