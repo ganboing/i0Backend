@@ -27,7 +27,7 @@ def ADJCALLSTACKUP : i0Pseudo<(outs), (ins i64imm:$amt1, i64imm:$amt2),
 def mem : Operand<i64> {
   let PrintMethod = "printMemOperand";
   let MIOperandInfo = (ops GR64, i32imm);
-  let EncoderMethod = "getMemEncoding";  
+  let EncoderMethod = "getMemEncoding";
 }
 
 def brtarget : Operand<OtherVT>{
@@ -100,7 +100,7 @@ def rir : ArithLogicRIR64<op, asmstr, opnode>;
 //def irr : ArithLogicIRR64<op, asmstr, opnode>;
 }
 
-class BranchCC64RI<bits<4> bopt, string asmstr, PatFrag b_cond> 
+class BranchCC64RI<bits<4> bopt, string asmstr, PatFrag b_cond>
 : i0InsBCCri64<bopt, (outs), (ins GR64:$reg, i64imm:$imm64, brtarget:$jmptarget),
   !strconcat(asmstr, "\t$reg, $imm64, $jmptarget"), [(brcond (i64 (b_cond GR64:$reg, imm_64:$imm64)), bb:$jmptarget)], NoItinerary>{
 }
@@ -138,12 +138,12 @@ def rr : BranchCC64RR<bopt, asmstr, b_cond>;
 def ri : BranchCC64RI<bopt, asmstr, b_cond>;
 def ir : BranchCC64IR<bopt, asmstr, b_cond>;
 
-}  
+}
 
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex], [SDNPWantParent]>;
 
-class LoadRM<Attr attr, string asmstr, bits<2> ext, PatFrag OpNode> : 
-  i0InsLoadR64<attr, ext, (outs GR64:$rvalue), (ins mem:$addr), !strconcat(asmstr, " \t$rvalue, $addr"), 
+class LoadRM<Attr attr, string asmstr, bits<2> ext, PatFrag OpNode> :
+  i0InsLoadR64<attr, ext, (outs GR64:$rvalue), (ins mem:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
     [(set GR64:$rvalue, (OpNode addr:$addr))], NoItinerary> {
 }
 
@@ -153,7 +153,7 @@ class StoreRM<Attr attr, string asmstr, PatFrag OpNode> :
 }
 
 def Storei64 :
-  i0InsStoreI64<(outs), (ins i64imm:$imm64, mem:$addr), "storei64 $imm64, $addr", 
+  i0InsStoreI64<(outs), (ins i64imm:$imm64, mem:$addr), "storei64 $imm64, $addr",
     [(store imm_64:$imm64, addr:$addr)], NoItinerary> ;
 
 def Storei32 :
