@@ -1,7 +1,9 @@
 #!/bin/sh
 llvm_dir=$1
+mkdir "$llvm_dir/llvm.i0"
 llvm_source_dir=$(realpath "$llvm_dir/llvm.i0")
 echo "llvm source from $llvm_source_dir"
+mkdir "$llvm_dir/llvm.i0.eclipse"
 llvm_eclipse_dir=$(realpath "$llvm_dir/llvm.i0.eclipse")
 echo "llvm eclips project dir $llvm_eclipse_dir"
 cd $llvm_eclipse_dir
