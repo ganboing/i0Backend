@@ -63,7 +63,6 @@ MCOperand i0AsmPrinter::lowerToMcop(const MachineOperand& MCOP) {
 MCInst i0AsmPrinter::lowerToMcinst(const MachineInstr& MCI) {
 	MCInst inst;
 	inst.setOpcode(MCI.getOpcode());
-	dbgs() << "emitting MCI of op = " << MCI.getOpcode() << "\n";
 	for (unsigned i = 0, j = MCI.getNumOperands(); i != j; ++i) {
 		const MachineOperand& MO = MCI.getOperand(i);
 		inst.addOperand(lowerToMcop(MO));
