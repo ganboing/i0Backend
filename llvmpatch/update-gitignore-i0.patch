@@ -1,0 +1,25 @@
+From 8e3bd39171cfd830c90220de900583267f36092f Mon Sep 17 00:00:00 2001
+From: ganboing <ganboing@gmail.com>
+Date: Tue, 5 May 2015 22:56:05 +0800
+Subject: [PATCH] update gitignore
+
+---
+ .gitignore | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/.gitignore b/.gitignore
+index 7e3cd94..1944d9b 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -59,6 +59,8 @@ tools/llgo
+ tools/polly
+ # Sphinx build tree, if building in-source dir.
+ docs/_build
++# i0 backend
++lib/Target/i0
+ 
+ #==============================================================================#
+ # Files created in tree by the Go bindings.
+-- 
+1.9.1
+
