@@ -15,9 +15,9 @@ def callseq_end   : SDNode<"ISD::CALLSEQ_END", SDT_i0_CallSeqEnd, [SDNPHasChain,
 
 let Defs=[SPq], Uses=[SPq] in {
 
-def ADJCALLSTACKDOWN : i0Pseudo<(outs), (ins i64imm:$amt),
+def ADJCALLSTACKDOWN : i0Pseudo<(outs), (ins imm_i64:$amt),
   "!ADJCALLSTACKDOWN $amt", [(callseq_start timm:$amt)]>;
-def ADJCALLSTACKUP : i0Pseudo<(outs), (ins i64imm:$amt1, i64imm:$amt2),
+def ADJCALLSTACKUP : i0Pseudo<(outs), (ins imm_i64:$amt1, imm_i64:$amt2),
   "!ADJCALLSTACKUP $amt1", [(callseq_end timm:$amt1, timm:$amt2)]>;
 
 }
@@ -26,7 +26,7 @@ def ADJCALLSTACKUP : i0Pseudo<(outs), (ins i64imm:$amt1, i64imm:$amt2),
 
 def mem : Operand<i64> {
   let PrintMethod = "printMemOperand";
-  let MIOperandInfo = (ops GR64, i32imm);
+  let MIOperandInfo = (ops GR64, imm_i32);
   let EncoderMethod = "getMemEncoding";
 }
 
@@ -41,13 +41,16 @@ def calltarget : Operand<iPTR>{
   let EncoderMethod = "getJumpTargetOpValue";
 }
 
-def imm_64 : Operand<i64>{
+def imm_64 : ImmLeaf<i64, [{return true;}]>;
+def imm_32 : ImmLeaf<i32, [{return true;}]>;
+def imm_8 : ImmLeaf<i8, [{return true;}]>;
+def imm_i64 : Operand<i64>{
   let PrintMethod = "printImm64";
 }
-def imm_32 : Operand<i32>{
+def imm_i32 : Operand<i32>{
   let PrintMethod = "PrintImm32";
 }
-def imm_8 : Operand<i8>{
+def imm_i8 : Operand<i8>{
   let PrintMethod = "PrintImm8";
 }
 
@@ -57,12 +60,12 @@ class ArithLogicRRR64<bits<11> op, string asmstr, SDNode opnode>
 }
 
 class ArithLogicRIR64<bits<11> op, string asmstr, SDNode opnode>
-: i0InsAri64rir<op, (outs GR64:$rout), (ins GR64:$rin, i64imm:$imm64),
+: i0InsAri64rir<op, (outs GR64:$rout), (ins GR64:$rin, imm_i64:$imm64),
   !strconcat(asmstr, "\t$rin, $imm64, $rout"), [(set GR64:$rout, (opnode GR64:$rin, imm_64:$imm64))], NoItinerary>{
 }
 
 class ArithLogicIRR64<bits<11> op, string asmstr, SDNode opnode>
-: i0InsAri64irr<op, (outs GR64:$rout), (ins i64imm:$imm64, GR64:$rin),
+: i0InsAri64irr<op, (outs GR64:$rout), (ins imm_i64:$imm64, GR64:$rin),
   !strconcat(asmstr, "\t$imm64, $rin, $rout"), [(set GR64:$rout, (opnode imm_64:$imm64, GR64:$rin))], NoItinerary>{
 }
 
@@ -72,16 +75,16 @@ class SetccRRR64<bits<11> op, string asmstr, PatFrag b_cond>
 }
 
 class SetccRIR64<bits<11> op, string asmstr, PatFrag b_cond>
-: i0InsAri64rir<op, (outs GR64:$rout), (ins GR64:$rin, i64imm:$imm64),
+: i0InsAri64rir<op, (outs GR64:$rout), (ins GR64:$rin, imm_i64:$imm64),
   !strconcat(asmstr, "\t$rin, $imm64, $rout"), [(set GR64:$rout, (i64 (b_cond GR64:$rin, imm_64:$imm64)))], NoItinerary>{
 }
 
 class SetccIRR64<bits<11> op, string asmstr, PatFrag b_cond>
-: i0InsAri64irr<op, (outs GR64:$rout), (ins i64imm:$imm64, GR64:$rin),
+: i0InsAri64irr<op, (outs GR64:$rout), (ins imm_i64:$imm64, GR64:$rin),
   !strconcat(asmstr, "\t$imm64, $rin, $rout"), [(set GR64:$rout, (i64 (b_cond imm_64:$imm64, GR64:$rin)))], NoItinerary>{
 }
 
-def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins i64imm:$imm64), "mov \t$imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
+def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins imm_i64:$imm64), "mov \t$imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
 def MOVrr : i0InsMov64rr<(outs GR64:$rout), (ins GR64:$rin), "mov \t$rin, $rout", [], NoItinerary>;
 
 multiclass Setcc64<bits<11> op, string asmstr, PatFrag b_cond> {
@@ -107,7 +110,7 @@ def rir : ArithLogicRIR64<op, asmstr, opnode>;
 }
 
 class BranchCC64RI<bits<4> bopt, string asmstr, PatFrag b_cond>
-: i0InsBCCri64<bopt, (outs), (ins GR64:$reg, i64imm:$imm64, brtarget:$jmptarget),
+: i0InsBCCri64<bopt, (outs), (ins GR64:$reg, imm_i64:$imm64, brtarget:$jmptarget),
   !strconcat(asmstr, "\t$reg, $imm64, $jmptarget"), [(brcond (i64 (b_cond GR64:$reg, imm_64:$imm64)), bb:$jmptarget)], NoItinerary>{
 }
 
@@ -117,7 +120,7 @@ class BranchCC64RR<bits<4> bopt, string asmstr, PatFrag b_cond>
 }
 
 class BranchCC64IR<bits<4> bopt, string asmstr, PatFrag b_cond>
-: i0InsBCCir64<bopt, (outs), (ins i64imm:$imm64, GR64:$reg, brtarget:$jmptarget),
+: i0InsBCCir64<bopt, (outs), (ins imm_i64:$imm64, GR64:$reg, brtarget:$jmptarget),
   !strconcat(asmstr, "\t$imm64, $reg, $jmptarget"), [(brcond (i64 (b_cond imm_64:$imm64, GR64:$reg)), bb:$jmptarget)], NoItinerary>{
 }
 
@@ -159,15 +162,15 @@ class StoreRM<Attr attr, string asmstr, PatFrag OpNode> :
 }
 
 def Storei64 :
-  i0InsStoreI64<(outs), (ins i64imm:$imm64, mem:$addr), "storei64 $imm64, $addr",
+  i0InsStoreI64<(outs), (ins imm_i64:$imm64, mem:$addr), "storei64 $imm64, $addr",
     [(store imm_64:$imm64, addr:$addr)], NoItinerary> ;
 
 def Storei32 :
-  i0InsStoreI32<(outs), (ins i32imm:$imm32, mem:$addr), "storei32 $imm32, $addr",
+  i0InsStoreI32<(outs), (ins imm_i32:$imm32, mem:$addr), "storei32 $imm32, $addr",
     [(store imm_32:$imm32, addr:$addr)], NoItinerary> ;
 
 def Storei8 :
-  i0InsStoreI8<(outs), (ins i8imm:$imm8, mem:$addr), "storei8 $imm8, $addr",
+  i0InsStoreI8<(outs), (ins imm_i8:$imm8, mem:$addr), "storei8 $imm8, $addr",
     [(store imm_8:$imm8, addr:$addr)], NoItinerary> ;
 
 multiclass LoadR64 {
