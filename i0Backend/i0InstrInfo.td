@@ -1,3 +1,13 @@
+def imm_i64 : Operand<i64>{
+  let PrintMethod = "printImm64";
+}
+def imm_i32 : Operand<i32>{
+  let PrintMethod = "PrintImm32";
+}
+def imm_i8 : Operand<i8>{
+  let PrintMethod = "PrintImm8";
+}
+
 def SDT_i0_JmpLink : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 def SDT_i0_Ret : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 
@@ -44,15 +54,6 @@ def calltarget : Operand<iPTR>{
 def imm_64 : ImmLeaf<i64, [{return true;}]>;
 def imm_32 : ImmLeaf<i32, [{return true;}]>;
 def imm_8 : ImmLeaf<i8, [{return true;}]>;
-def imm_i64 : Operand<i64>{
-  let PrintMethod = "printImm64";
-}
-def imm_i32 : Operand<i32>{
-  let PrintMethod = "PrintImm32";
-}
-def imm_i8 : Operand<i8>{
-  let PrintMethod = "PrintImm8";
-}
 
 class ArithLogicRRR64<bits<11> op, string asmstr, SDNode opnode>
 : i0InsAri64rrr<op, (outs GR64:$ra), (ins GR64:$rb, GR64:$rc),
