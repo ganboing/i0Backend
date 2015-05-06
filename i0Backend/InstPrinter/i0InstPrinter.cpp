@@ -65,6 +65,21 @@ void i0InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 
 }
 
+void i0InstPrinter::printImm8(const MCInst* MI, unsigned opNum, raw_ostream &O){
+	O << "$";
+	printOperand(MI, opNum, O);
+}
+
+void i0InstPrinter::printImm32(const MCInst* MI, unsigned opNum, raw_ostream &O){
+	O << "$";
+	printOperand(MI, opNum, O);
+}
+
+void i0InstPrinter::printImm64(const MCInst* MI, unsigned opNum, raw_ostream &O){
+	O << "$";
+	printOperand(MI, opNum, O);
+}
+
 void i0InstPrinter::printMemOperand(const MCInst *MI, int opNum,
 		raw_ostream &O) {
 	printOperand(MI, opNum, O);
