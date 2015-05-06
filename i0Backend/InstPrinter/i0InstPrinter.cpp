@@ -82,8 +82,9 @@ void i0InstPrinter::printImm64(const MCInst* MI, unsigned opNum, raw_ostream &O)
 
 void i0InstPrinter::printMemOperand(const MCInst *MI, int opNum,
 		raw_ostream &O) {
+	O << "(";
 	printOperand(MI, opNum, O);
-	O << ", ";
+	O << ")";
 	printOperand(MI, opNum + 1, O);
 }
 
