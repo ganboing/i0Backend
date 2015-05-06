@@ -28,7 +28,7 @@ i0TargetLowering::i0TargetLowering(i0TargetMachine& TM, const i0Subtarget& STI) 
 
 	setOperationAction(ISD::BR_CC, MVT::i64, Expand);
 	setOperationAction(ISD::SELECT_CC, MVT::i64, Expand);
-	setOperationAction(ISD::SELECT, MVT::i64, Expand);
+	setOperationAction(ISD::SELECT, MVT::i64, Custom);
 	//expand the select_cc
 	setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
 
@@ -50,13 +50,18 @@ SDValue i0TargetLowering::LowerGlobalAddr(SDValue Op, SelectionDAG &DAG) const {
 	return DAG.getTargetGlobalAddress(GV, DL, Ty, 0);
 }
 
+SDValue i0TargetLowering::LowerSELECT(SDValue Op, SelectionDAG &DAG) const {
+	return Op;
+}
+
 SDValue i0TargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
 
 	dbgs() << "try to lower" << Op.getOpcode();
 	switch (Op.getOpcode()) {
 	case ISD::GlobalAddress:
 		return LowerGlobalAddr(Op, DAG);
-		break;
+	case ISD::SELECT:
+		return LowerSELECT(Op, DAG);
 	default:
 		dbgs() << " can not lower\n";
 	}

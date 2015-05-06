@@ -27,6 +27,7 @@ public:
 		i0TargetMachine& TM, const i0Subtarget& STI);
 	i0TargetLowering(i0TargetMachine& TM, const i0Subtarget& STI);
 	SDValue LowerGlobalAddr(SDValue Op, SelectionDAG &DAG) const;
+	SDValue LowerSELECT(SDValue Op, SelectionDAG &DAG) const;
 	//SDValue LowerBlockAddr(SDValue Op, SelectionDAG& DAG) const;
 	SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const;
 	SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
