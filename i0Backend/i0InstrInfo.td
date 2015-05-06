@@ -2,10 +2,10 @@ def imm_i64 : Operand<i64>{
   let PrintMethod = "printImm64";
 }
 def imm_i32 : Operand<i32>{
-  let PrintMethod = "PrintImm32";
+  let PrintMethod = "printImm32";
 }
 def imm_i8 : Operand<i8>{
-  let PrintMethod = "PrintImm8";
+  let PrintMethod = "printImm8";
 }
 
 def SDT_i0_JmpLink : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
