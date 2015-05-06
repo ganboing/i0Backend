@@ -36,9 +36,9 @@ void i0FrameLowering::emitPrologue(MachineFunction &MF) const {
 	}
 
 	uint64_t stackSize = MFI->getStackSize();
-	BuildMI(MBB, I, DL, TII.get(i0::ADDrir)).addReg(i0::SPq).addReg(i0::SPq).addImm(
+	BuildMI(MBB, I, DL, TII.get(i0::ADDrir), i0::SPq).addReg(i0::SPq).addImm(
 			-stackSize);
-	BuildMI(MBB, I, DL, TII.get(i0::MOVrr)).addReg(i0::BPq).addReg(i0::SPq);
+	BuildMI(MBB, I, DL, TII.get(i0::MOVrr), i0::BPq).addReg(i0::SPq);
 
 }
 void i0FrameLowering::emitEpilogue(MachineFunction &MF,
@@ -48,6 +48,6 @@ void i0FrameLowering::emitEpilogue(MachineFunction &MF,
 	const i0InstrInfo& TII =
 			*static_cast<const i0InstrInfo*>(MF.getSubtarget().getInstrInfo());
 	DebugLoc DL = MBBI->getDebugLoc();
-	BuildMI(MBB, MBBI, DL, TII.get(i0::MOVrr)).addReg(i0::SPq).addReg(i0::BPq);
+	BuildMI(MBB, MBBI, DL, TII.get(i0::MOVrr), i0::SPq).addReg(i0::BPq);
 }
 }
