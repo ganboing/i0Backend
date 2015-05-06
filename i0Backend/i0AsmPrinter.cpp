@@ -17,9 +17,8 @@ bool i0AsmPrinter::runOnMachineFunction(MachineFunction& MF) {
 }
 
 void i0AsmPrinter::EmitFunctionEntryLabel() {
-	OutStreamer.EmitRawText("function ");
-	OutStreamer.EmitLabel(CurrentFnSym);
-	OutStreamer.EmitRawText(" :\n");
+	OutStreamer.EmitRawText(".proc ");
+	OutStreamer.EmitRawText(CurrentFnSym->getName());
 }
 
 void i0AsmPrinter::EmitFunctionBodyStart() {
@@ -27,8 +26,8 @@ void i0AsmPrinter::EmitFunctionBodyStart() {
 }
 
 void i0AsmPrinter::EmitFunctionBodyEnd() {
+	OutStreamer.EmitRawText(".endp ");
 	OutStreamer.EmitRawText(CurrentFnSym->getName());
-	OutStreamer.EmitRawText(" end\n");
 }
 
 void i0AsmPrinter::EmitStartOfAsmFile(Module& M) {
