@@ -17,7 +17,9 @@ bool i0AsmPrinter::runOnMachineFunction(MachineFunction& MF) {
 }
 
 void i0AsmPrinter::EmitFunctionEntryLabel() {
+	OutStreamer.Flush();
 	OutStreamer.EmitRawText(".proc ");
+	OutStreamer.Flush();
 	OutStreamer.EmitRawText(CurrentFnSym->getName());
 }
 
