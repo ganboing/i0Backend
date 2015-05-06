@@ -17,7 +17,7 @@ i0InstPrinter::i0InstPrinter(const MCAsmInfo &mai, const MCInstrInfo &mii,
 void i0InstPrinter::printInst(const MCInst *MI, raw_ostream &O,
 		StringRef Annot) {
 	printInstruction(MI, O);
-	printAnnotation(O, Annot);
+	//printAnnotation(O, Annot);
 }
 
 static const char* expr_kind_str(MCExpr::ExprKind kind){
@@ -67,11 +67,9 @@ void i0InstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
 
 void i0InstPrinter::printMemOperand(const MCInst *MI, int opNum,
 		raw_ostream &O) {
-	O << "( ";
 	printOperand(MI, opNum, O);
-	O << " + ";
+	O << ", ";
 	printOperand(MI, opNum + 1, O);
-	O << ")";
 }
 
 }
