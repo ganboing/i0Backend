@@ -1,0 +1,21 @@
+	<filteredResources>
+		<filter>
+			<id>1430901778067</id>
+			<name></name>
+			<type>30</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-projectRelativePath-matches-true-false-*/clang/INPUTS</arguments>
+			</matcher>
+		</filter>
+		<filter>
+			<id>1430901778092</id>
+			<name></name>
+			<type>30</type>
+			<matcher>
+				<id>org.eclipse.ui.ide.multiFilter</id>
+				<arguments>1.0-projectRelativePath-matches-true-false-*/clang/test</arguments>
+			</matcher>
+		</filter>
+	</filteredResources>
+</projectDescription>
