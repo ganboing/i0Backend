@@ -42,7 +42,7 @@ static void print_expr(const MCExpr* expr, raw_ostream& O){
 	case MCExpr::SymbolRef:
 	{
 		const MCSymbolRefExpr* symref = cast<MCSymbolRefExpr>(expr);
-		O << symref->getSymbol();
+		O << "@" << symref->getSymbol();
 		break;
 	}
 	default:

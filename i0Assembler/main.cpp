@@ -55,7 +55,7 @@ namespace i0spec
 {
 enum i0regs
 {
-	r0, r1, r2, r3, r4, r5, sp, bp,
+	r0, r1, r2, r3, r4, lr, sp, bp,
 };
 }
 
@@ -96,7 +96,7 @@ i0spec::i0regs decode_reg(const char* reg)
 	{ "r2q", i0spec::r2 },
 	{ "r3q", i0spec::r3 },
 	{ "r4q", i0spec::r4 },
-	{ "r5q", i0spec::r5 },
+	{ "lrq", i0spec::lr },
 	{ "spq", i0spec::sp },
 	{ "bpq", i0spec::bp }, };
 	auto i = reg_map.find(reg);
@@ -159,7 +159,7 @@ check_inner_oper(std::string& oper)
 
 typedef std::unique_ptr<i0D> i0oper;
 
-i0oper get_oper(std::string& oper)
+i0oper get_oper(std::string& oper, symref& symrefmap)
 {
 	if (oper.size())
 	{
@@ -235,6 +235,18 @@ union i0T
 		uint32_t opcode : 11;
 	};
 	unsigned char b[I0_INS_LEN_BJ];
+};
+
+union i0ATI
+{
+	struct
+	{
+		uint32_t :6;
+		uint32_t addrm : 3;
+		uint32_t mode : 4;
+		uint32_t opcode : 11;
+	};
+	unsigned char b[I0_INS_LEN_BIJ];
 };
 
 void encode_arithlogic(const std::string& op, std::istream& in,
@@ -377,6 +389,13 @@ void encode_jmp(const std::string& op, std::istream& in, inst_vector& out, symre
 	bytes.opcode = OP_B;
 	bytes.mode = OPT_B_J;
 	bytes.ra = JUMP_A;
+	serialize_opcode(bytes.b, out);
+	symrefmap.insert(std::make_pair(out.size(), std::move(target)));
+	out.insert(out.end(), sizeof(uint64_t), (unsigned char)0xEE);
+}
+
+void encode_indrjmp(const std::string& op, std::istream& in, inst_vector& out, symref& symrefmap){
+
 }
 
 void encode_bcc(const std::string& op, std::istream& in, inst_vector& out, symref& symrefmap)
