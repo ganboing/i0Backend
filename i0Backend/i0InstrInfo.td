@@ -43,7 +43,7 @@ def calltarget : Operand<iPTR>{
 
 def imm_64 : Operand<i64>{
   let PrintMethod = "printImm64";
-};
+}
 //def imm_32 : ImmLeaf<i32, [{return true;}]>;
 //def imm_8 : ImmLeaf<i8, [{return true;}]>;
 
