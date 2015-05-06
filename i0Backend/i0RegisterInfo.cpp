@@ -27,9 +27,10 @@ BitVector i0RegisterInfo::getReservedRegs(const MachineFunction& MF) const {
 	BitVector Reserved(getNumRegs());
 	Reserved.set(i0::SPq);
 	Reserved.set(i0::LRq);
-	if (MF.getSubtarget().getFrameLowering()->hasFP(MF)) {
+	//currently we reserve BP no matter the function use it or not
+	//if (MF.getSubtarget().getFrameLowering()->hasFP(MF)) {
 		Reserved.set(i0::BPq);
-	}
+	//}
 	return Reserved;
 }
 
