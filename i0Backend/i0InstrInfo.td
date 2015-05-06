@@ -1,4 +1,4 @@
-def SDT_i0_JmpLink : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>; 
+def SDT_i0_JmpLink : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 def SDT_i0_Ret : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
 
 def i0Ret : SDNode<"i0ISD::Ret", SDTNone,
@@ -75,8 +75,8 @@ class SetccIRR64<bits<11> op, string asmstr, PatFrag b_cond>
   !strconcat(asmstr, "\t$imm64, $rin, $rout"), [(set GR64:$rout, (i64 (b_cond imm_64:$imm64, GR64:$rin)))], NoItinerary>{
 }
 
-def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins i64imm:$imm64), "mov $imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
-def MOVrr : i0InsMov64rr<(outs GR64:$rout), (ins GR64:$rin), "mov $rin, $rout", [], NoItinerary>;
+def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins i64imm:$imm64), "mov \t$imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
+def MOVrr : i0InsMov64rr<(outs GR64:$rout), (ins GR64:$rin), "mov \t$rin, $rout", [], NoItinerary>;
 
 multiclass Setcc64<bits<11> op, string asmstr, PatFrag b_cond> {
 

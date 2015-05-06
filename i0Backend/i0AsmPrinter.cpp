@@ -19,7 +19,7 @@ bool i0AsmPrinter::runOnMachineFunction(MachineFunction& MF) {
 void i0AsmPrinter::EmitFunctionEntryLabel() {
 	OutStreamer.EmitRawText("function ");
 	OutStreamer.EmitLabel(CurrentFnSym);
-	OutStreamer.EmitRawText("\n");
+	OutStreamer.EmitRawText(" :\n");
 }
 
 void i0AsmPrinter::EmitFunctionBodyStart() {
@@ -32,7 +32,7 @@ void i0AsmPrinter::EmitFunctionBodyEnd() {
 }
 
 void i0AsmPrinter::EmitStartOfAsmFile(Module& M) {
-	OutStreamer.EmitRawText("start of i0 asm\n");
+	OutStreamer.EmitRawText("\t.i0_asm\n");
 }
 
 MCOperand i0AsmPrinter::lowerToMcop(const MachineOperand& MCOP) {
