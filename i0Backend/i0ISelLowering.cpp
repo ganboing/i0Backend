@@ -28,6 +28,7 @@ i0TargetLowering::i0TargetLowering(i0TargetMachine& TM, const i0Subtarget& STI) 
 
 	setOperationAction(ISD::BR_CC, MVT::i64, Expand);
 	setOperationAction(ISD::SELECT_CC, MVT::i64, Expand);
+	setOperationAction(ISD::SELECT, MVT::i64, Expand);
 	//expand the select_cc
 	setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
 
