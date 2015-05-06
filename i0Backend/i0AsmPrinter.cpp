@@ -17,8 +17,9 @@ bool i0AsmPrinter::runOnMachineFunction(MachineFunction& MF) {
 }
 
 void i0AsmPrinter::EmitFunctionEntryLabel() {
-	OutStreamer.EmitRawText("fnuction entry :\n");
+	OutStreamer.EmitRawText("function ");
 	OutStreamer.EmitLabel(CurrentFnSym);
+	OutStreamer.EmitRawText("\n");
 }
 
 void i0AsmPrinter::EmitFunctionBodyStart() {
