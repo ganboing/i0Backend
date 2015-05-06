@@ -41,9 +41,11 @@ def calltarget : Operand<iPTR>{
   let EncoderMethod = "getJumpTargetOpValue";
 }
 
-def imm_64 : ImmLeaf<i64, [{return true;}]>;
-def imm_32 : ImmLeaf<i32, [{return true;}]>;
-def imm_8 : ImmLeaf<i8, [{return true;}]>;
+def imm_64 : Operand<i64>{
+  let PrintMethod = "printImm64";
+};
+//def imm_32 : ImmLeaf<i32, [{return true;}]>;
+//def imm_8 : ImmLeaf<i8, [{return true;}]>;
 
 class ArithLogicRRR64<bits<11> op, string asmstr, SDNode opnode>
 : i0InsAri64rrr<op, (outs GR64:$ra), (ins GR64:$rb, GR64:$rc),
