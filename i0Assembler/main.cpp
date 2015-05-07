@@ -1,17 +1,30 @@
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <map>
 #include <cstdint>
 #include <cstdint>
 #include <cstring>
-#include <stdexcept>
-#include <string>
-#include <memory>
 #include <cassert>
+#include <string>
+#include <stdexcept>
+#include <vector>
+#include <map>
 #include <algorithm>
+#include <memory>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include "../../../d-thinker/l0-bin-translator/src/codec.h"
 #include "../../../d-thinker/l0-bin-translator/src/external/sys_config.h"
+#define xstr(s) str(s)
+#define str(s) #s
+const char i0_startup[] = "\tmov $" xstr(PR_RUNNER_SB) ", r0q\n"
+"\tmov $" xstr(PR_RUNNER_SS) ", r1q\n"
+"\tloadr64 spq, (r0q)0\n"
+"\tloadr64 r0q, (r1q)0\n"
+"\tadd spq, r0q, spq\n"
+"\tmov $0, bpq\n"
+"\tmov @crt-return, lrq\n"
+"\tjmp @main\n"
+"crt-return:\n"
+"\tcommit\n";
 
 #define I0_INS_LEN_CONV		(0x04U)
 #define I0_INS_LEN_ALU		(0x03U)
@@ -30,12 +43,37 @@
 #define I0_INS_LEN_OPCODE	(0x02U)
 #define I0_INS_LEN_BOPCODE	(0x02U)
 
+bool isdebug(false);
 typedef std::vector<unsigned char> inst_vector;
 typedef std::map<size_t, std::string> symref;
 typedef std::map<std::string, size_t> symdef;
 typedef void
 encode_inst(const std::string&, std::istream&, inst_vector&, symref&);
 typedef std::map<const std::string, encode_inst> encoder_map;
+
+std::string nexttoken(std::istream& in)
+{
+	std::string token;
+	for (;;)
+	{
+		in >> token;
+		if (in.eof())
+		{
+			break;
+		}
+		assert(token.size());
+		if (token.front() == '#')
+		{
+			std::string comment;
+			getline(in, comment);
+		}
+		else
+		{
+			break;
+		}
+	}
+	return std::move(token);
+}
 
 template<size_t N>
 void serialize_opcode(const unsigned char (&b)[N], inst_vector& out)
@@ -68,6 +106,8 @@ struct i0D
 	serialize(inst_vector&) const =0;
 	virtual unsigned
 	addrm() const=0;
+	virtual std::ostream&
+	dump(std::ostream&) const=0;
 	virtual inline ~i0D()
 	{
 	}
@@ -80,6 +120,13 @@ struct i0I: i0D
 	{
 	}
 	const int64_t data;
+
+	virtual inline std::ostream&
+	dump(std::ostream& O) const
+	{
+		O << "imm:" << data << ' ';
+		return O;
+	}
 	virtual inline void serialize(inst_vector& bytes) const
 	{
 		serialize_int(data, bytes);
@@ -120,6 +167,12 @@ struct i0R: i0D
 	{
 		return ADDRM_ABSOLUTE;
 	}
+	virtual inline std::ostream&
+	dump(std::ostream& O) const
+	{
+		O << "reg:" << reg << ' ';
+		return O;
+	}
 	const i0spec::i0regs reg;
 	virtual inline void serialize(inst_vector& bytes) const
 	{
@@ -138,6 +191,12 @@ struct i0M: i0R
 	{
 		return ADDRM_DISPLACEMENT;
 	}
+	virtual inline std::ostream&
+	dump(std::ostream& O) const
+	{
+		O << "mem:(" << reg << ")" << offset << ' ';
+		return O;
+	}
 	const int32_t offset;
 	virtual inline void serialize(inst_vector& bytes) const
 	{
@@ -154,6 +213,12 @@ struct i0S: i0D
 			sym(_sym), refs(_refs)
 	{
 	}
+	virtual inline std::ostream&
+	dump(std::ostream& O) const
+	{
+		O << "sym:" << sym << ' ';
+		return O;
+	}
 	virtual inline unsigned addrm() const
 	{
 		return ADDRM_IMMEDIATE;
@@ -165,15 +230,15 @@ struct i0S: i0D
 	}
 };
 
-std::string&
-check_inner_oper(std::string& oper)
+std::string&&
+check_inner_oper(std::string&& oper)
 {
 	if (oper.size())
 	{
 		if (oper.back() == ',')
 		{
 			oper.pop_back();
-			return oper;
+			return std::move(oper);
 		}
 	}
 	throw std::runtime_error("invalid operand");
@@ -181,7 +246,7 @@ check_inner_oper(std::string& oper)
 
 typedef std::unique_ptr<i0D> i0oper;
 
-i0oper get_oper(std::string& oper, symref& symrefmap)
+i0oper get_oper(std::string&& oper, symref& symrefmap)
 {
 	if (oper.size())
 	{
@@ -275,6 +340,17 @@ union i0ATI
 	unsigned char b[I0_INS_LEN_BIJ];
 };
 
+union i0EXIT
+{
+	struct
+	{
+		uint32_t :3;
+		uint32_t option :2;
+		uint32_t opcode :11;
+	};
+	unsigned char b[I0_INS_LEN_EXIT];
+};
+
 void encode_arithlogic(const std::string& op, std::istream& in,
 		inst_vector& out, symref& refs)
 {
@@ -303,13 +379,9 @@ void encode_arithlogic(const std::string& op, std::istream& in,
 	{
 		throw std::runtime_error("arithlogic opcode not found");
 	}
-	std::string src1, src2, dest;
-	in >> src1 >> src2 >> dest;
-	i0oper oper1(get_oper(check_inner_oper(src1), refs)), oper2(
-			get_oper(check_inner_oper(src2), refs)), oper3(
-			get_oper(dest, refs));
-	assert(dynamic_cast<i0I*>(oper1.get()) || dynamic_cast<i0R*>(oper1.get()));
-	assert(dynamic_cast<i0I*>(oper2.get()) || dynamic_cast<i0R*>(oper2.get()));
+	i0oper oper1(get_oper(check_inner_oper(nexttoken(in)), refs)), oper2(
+			get_oper(check_inner_oper(nexttoken(in)), refs)), oper3(
+			get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0R*>(oper3.get()));
 	bytes.opcode = i->second.first;
 	bytes.A = i->second.second;
@@ -320,6 +392,14 @@ void encode_arithlogic(const std::string& op, std::istream& in,
 	oper1->serialize(out);
 	oper2->serialize(out);
 	oper3->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		oper2->dump(std::cerr);
+		oper3->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void encode_move(const std::string& op, std::istream& in, inst_vector& out,
@@ -327,11 +407,11 @@ void encode_move(const std::string& op, std::istream& in, inst_vector& out,
 {
 	i0AADM bytes
 	{ };
-	std::string src, dest;
-	in >> src >> dest;
-	i0oper oper1(get_oper(check_inner_oper(src), refs)), oper2(
-			get_oper(dest, refs));
-	assert(dynamic_cast<i0I*>(oper1.get()) || dynamic_cast<i0R*>(oper1.get()));
+	i0oper oper1(get_oper(check_inner_oper(nexttoken(in)), refs)), oper2(
+			get_oper(nexttoken(in), refs));
+	assert(
+			dynamic_cast<i0S*>(oper1.get()) || dynamic_cast<i0I*>(oper1.get())
+					|| dynamic_cast<i0R*>(oper1.get()));
 	assert(dynamic_cast<i0R*>(oper2.get()));
 	bytes.opcode = OP_CONV;
 	bytes.A1 = ATTR_UE;
@@ -341,6 +421,13 @@ void encode_move(const std::string& op, std::istream& in, inst_vector& out,
 	serialize_opcode(bytes.b, out);
 	oper1->serialize(out);
 	oper2->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		oper2->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void encode_load(const std::string& op, std::istream& in, inst_vector& out,
@@ -369,10 +456,8 @@ void encode_load(const std::string& op, std::istream& in, inst_vector& out,
 	{
 		throw std::runtime_error("load instr invalid");
 	}
-	std::string src, dest;
-	in >> dest >> src;
-	i0oper oper1(get_oper(check_inner_oper(dest), refs)), oper2(
-			get_oper(src, refs));
+	i0oper oper2(get_oper(check_inner_oper(nexttoken(in)), refs)), oper1(
+			get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0M*>(oper1.get()));
 	assert(dynamic_cast<i0R*>(oper2.get()));
 	bytes.opcode = OP_CONV;
@@ -383,6 +468,13 @@ void encode_load(const std::string& op, std::istream& in, inst_vector& out,
 	serialize_opcode(bytes.b, out);
 	oper1->serialize(out);
 	oper2->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		oper2->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void encode_store(const std::string& op, std::istream& in, inst_vector& out,
@@ -403,10 +495,8 @@ void encode_store(const std::string& op, std::istream& in, inst_vector& out,
 	{
 		throw std::runtime_error("load instr invalid");
 	}
-	std::string src, dest;
-	in >> src >> dest;
-	i0oper oper1(get_oper(check_inner_oper(src), refs)), oper2(
-			get_oper(dest, refs));
+	i0oper oper1(get_oper(check_inner_oper(nexttoken(in)), refs)), oper2(
+			get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0R*>(oper1.get()) || dynamic_cast<i0I*>(oper1.get()));
 	assert(dynamic_cast<i0M*>(oper2.get()));
 	bytes.opcode = OP_CONV;
@@ -417,6 +507,13 @@ void encode_store(const std::string& op, std::istream& in, inst_vector& out,
 	serialize_opcode(bytes.b, out);
 	oper1->serialize(out);
 	oper2->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		oper2->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void encode_jmp(const std::string& op, std::istream& in, inst_vector& out,
@@ -424,15 +521,19 @@ void encode_jmp(const std::string& op, std::istream& in, inst_vector& out,
 {
 	i0T bytes
 	{ };
-	std::string target;
-	in >> target;
-	i0oper oper1(get_oper(target, refs));
+	i0oper oper1(get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0S*>(oper1.get()));
 	bytes.opcode = OP_B;
 	bytes.mode = OPT_B_J;
-	bytes.ra = JUMP_R;
+	bytes.ra = JUMP_A;
 	serialize_opcode(bytes.b, out);
 	oper1->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void encode_indrjmp(const std::string& op, std::istream& in, inst_vector& out,
@@ -440,15 +541,64 @@ void encode_indrjmp(const std::string& op, std::istream& in, inst_vector& out,
 {
 	i0ATI bytes
 	{ };
-	std::string target;
-	in >> target;
-	i0oper oper1(get_oper(target, refs));
+	i0oper oper1(get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0R*>(oper1.get()));
 	bytes.opcode = OP_B;
 	bytes.mode = OPT_B_IJ;
 	bytes.addrm = oper1->addrm();
 	serialize_opcode(bytes.b, out);
 	oper1->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		std::cerr << "\n";
+	}
+}
+
+void encode_ret(const std::string& op, std::istream& in, inst_vector& out,
+		symref& refs)
+{
+	i0ATI bytes
+	{ };
+	i0oper oper1(new i0R("lrq"));
+	assert(dynamic_cast<i0R*>(oper1.get()));
+	bytes.opcode = OP_B;
+	bytes.mode = OPT_B_IJ;
+	bytes.addrm = oper1->addrm();
+	serialize_opcode(bytes.b, out);
+	oper1->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		oper1->dump(std::cerr);
+		std::cerr << "\n";
+	}
+}
+
+void encode_exit(const std::string& op, std::istream& in, inst_vector& out,
+		symref& refs)
+{
+	i0EXIT bytes
+	{ };
+	static const std::map<std::string, unsigned> opt =
+	{
+	{ "commit", OPT_EXIT_C },
+	{ "commitd", OPT_EXIT_CD },
+	{ "abort", OPT_EXIT_A },
+	{ "abortd", OPT_EXIT_AD } };
+	auto i = opt.find(op);
+	if (i == opt.end())
+	{
+		throw std::runtime_error("exit instruction invalid");
+	}
+	bytes.opcode = OP_EXIT;
+	bytes.option = i->second;
+	serialize_opcode(bytes.b, out);
+	if (isdebug)
+	{
+		std::cerr << op << " \n";
+	}
 }
 
 void encode_bcc(const std::string& op, std::istream& in, inst_vector& out,
@@ -501,26 +651,36 @@ void encode_bcc(const std::string& op, std::istream& in, inst_vector& out,
 	{
 		throw std::runtime_error("bcc invalid");
 	}
-	std::string src1, src2, target;
-	std::string* dis_src1 = i->second.first ? &src2 : &src1;
-	std::string* dis_src2 = i->second.first ? &src1 : &src2;
-	in >> *dis_src1 >> *dis_src2 >> target;
-	i0oper oper1(get_oper(check_inner_oper(src1), refs)), oper2(
-			get_oper(check_inner_oper(src2), refs)), oper3(
-			get_oper(target, refs));
-	assert(dynamic_cast<i0I*>(oper1.get()) || dynamic_cast<i0R*>(oper1.get()));
-	assert(dynamic_cast<i0I*>(oper2.get()) || dynamic_cast<i0R*>(oper2.get()));
+	i0oper __oper1(get_oper(check_inner_oper(nexttoken(in)), refs)), __oper2(
+			get_oper(check_inner_oper(nexttoken(in)), refs)), oper3(
+			get_oper(nexttoken(in), refs));
+	i0oper *oper1 = i->second.first ? &__oper2 : &__oper1;
+	i0oper *oper2 = i->second.first ? &__oper1 : &__oper2;
+	assert(
+			dynamic_cast<i0I*>(oper1->get())
+					|| dynamic_cast<i0R*>(oper1->get()));
+	assert(
+			dynamic_cast<i0I*>(oper2->get())
+					|| dynamic_cast<i0R*>(oper2->get()));
 	assert(dynamic_cast<i0S*>(oper3.get()));
 	bytes.opcode = OP_B;
 	bytes.mode = i->second.second.first;
 	bytes.A = i->second.second.second;
-	bytes.addrm1 = oper1->addrm();
-	bytes.addrm2 = oper2->addrm();
-	bytes.ra = JUMP_R;
+	bytes.addrm1 = (*oper1)->addrm();
+	bytes.addrm2 = (*oper2)->addrm();
+	bytes.ra = JUMP_A;
 	serialize_opcode(bytes.b, out);
-	oper1->serialize(out);
-	oper2->serialize(out);
+	(*oper1)->serialize(out);
+	(*oper2)->serialize(out);
 	oper3->serialize(out);
+	if (isdebug)
+	{
+		std::cerr << op << " ";
+		(*oper1)->dump(std::cerr);
+		(*oper2)->dump(std::cerr);
+		oper3->dump(std::cerr);
+		std::cerr << "\n";
+	}
 }
 
 void symfix(inst_vector& bytes, const symref& refs, const symdef& defs)
@@ -536,41 +696,90 @@ void symfix(inst_vector& bytes, const symref& refs, const symdef& defs)
 		{
 			throw std::runtime_error("symbol not found");
 		}
-		uint64_t update = k->second - i->first - sizeof(uint64_t);
+		uint64_t update = k->second + I0_CODE_BEGIN;
 		std::copy((unsigned char*) &update, (unsigned char*) (&update + 1),
 				&bytes[i->first]);
 	}
 }
 
-void emitinst(const std::string& token,std::ifstream& in, inst_vector& bytes, symdef& defs,
-		symref& refs)
+void addsym(std::string& token, inst_vector& bytes, symdef& defs)
 {
-
+	defs.insert(std::make_pair(std::move(token), bytes.size()));
 }
 
-void dispatch( std::ifstream& in, inst_vector& bytes,
-		symdef& defs, symref& refs)
+void emitinst(const std::string& token, std::istream& in, inst_vector& bytes,
+		symref& refs)
 {
-	for (;;)
+	static const std::map<std::string, encode_inst&> encode_table =
 	{
-		std::string token;
-		in >> token;
-		if (in.eof())
-		{
-			break;
-		}
-		assert(token.size());
-		if(function_level.size()){
-			emitfunction(token, in, bytes, defs, refs);
-		}
+	{ "add", encode_arithlogic },
+	{ "sub", encode_arithlogic },
+	{ "mul", encode_arithlogic },
+	{ "and", encode_arithlogic },
+	{ "or", encode_arithlogic },
+	{ "xor", encode_arithlogic },
+	{ "udiv", encode_arithlogic },
+	{ "sdiv", encode_arithlogic },
+	{ "mov", encode_move },
+	{ "loadrs8", encode_load },
+	{ "loadrs32", encode_load },
+	{ "loadra8", encode_load },
+	{ "loadra32", encode_load },
+	{ "loadrz8", encode_load },
+	{ "loadrz32", encode_load },
+	{ "loadr64", encode_load },
+	{ "storer8", encode_store },
+	{ "storer32", encode_store },
+	{ "storer64", encode_store },
+	{ "storei8", encode_store },
+	{ "storei32", encode_store },
+	{ "storei64", encode_store },
+	{ "jmp", encode_jmp },
+	{ "ble", encode_bcc },
+	{ "bge", encode_bcc },
+	{ "beq", encode_bcc },
+	{ "blt", encode_bcc },
+	{ "bgt", encode_bcc },
+	{ "bne", encode_bcc },
+	{ "bule", encode_bcc },
+	{ "buge", encode_bcc },
+	{ "bueq", encode_bcc },
+	{ "bult", encode_bcc },
+	{ "bugt", encode_bcc },
+	{ "bune", encode_bcc },
+	{ "ret", encode_ret },
+	{ "commit", encode_exit },
+	{ "commitd", encode_exit },
+	{ "abort", encode_exit },
+	{ "abortd", encode_exit },
 
+	};
+	auto i = encode_table.find(token);
+	if (i == encode_table.end())
+	{
+		throw std::runtime_error("unknown instruction");
+	}
+	i->second(token, in, bytes, refs);
+}
+
+void dispatch(std::istream& in, inst_vector& bytes, symdef& defs, symref& refs)
+{
+	std::string token;
+	while (token = nexttoken(in), token.size())
+	{
 		if (token.front() == '.')
 		{
 			if (token == ".proc")
 			{
-
+				std::string funcname(nexttoken(in));
+				std::cerr << "running on function " << funcname << "\n";
+				addsym(funcname, bytes, defs);
 			}
-			else if (input == ".i0_asm")
+			else if (token == ".endp")
+			{
+				std::cerr << "finished function\n";
+			}
+			else if (token == ".i0_asm")
 			{
 				std::cerr << "beginning parsing i0 asm\n";
 			}
@@ -578,32 +787,44 @@ void dispatch( std::ifstream& in, inst_vector& bytes,
 			{
 				std::string unknown_directive;
 				getline(in, unknown_directive);
-				std::cerr << "ignoring " << unknown_directive << "\n";
+				std::cerr << "ignoring " << token << unknown_directive << "\n";
 			}
 		}
-		else if (token.front() == "#")
+		else if (token.back() == ':')
 		{
-			//eat the comment
-			std::string comment;
-			getline(in, comment);
+			token.pop_back();
+			addsym(token, bytes, defs);
 		}
+		else
+		{
+			emitinst(token, in, bytes, refs);
+		}
+		std::cerr.flush();
 	}
 
 }
 
 int main(int argc, char** argv)
 {
-	if (argc != 1)
+	if (argc != 2)
 	{
 		std::cerr << "invalid argument\n";
+		exit(-1);
 	}
 
+	if (getenv("I0-ASM-DEBUG"))
+	{
+		std::cerr << "debugging\n";
+		isdebug = true;
+	}
 	std::ifstream file(argv[1]);
+	std::stringstream header(i0_startup);
 	inst_vector bytes;
 	symdef defs;
 	symref refs;
 
-	dispatch(input, file, bytes, defs, refs);
-
+	dispatch(header, bytes, defs, refs);
+	dispatch(file, bytes, defs, refs);
+	symfix(bytes, refs, defs);
 	return 0;
 }
