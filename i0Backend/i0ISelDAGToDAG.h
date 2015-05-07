@@ -14,6 +14,7 @@ public:
 	SDNode* Select(SDNode*) override;
 	bool SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
 			SDValue &Offset);
+	bool SelectAddrAbs(SDNode *Parent, SDValue Addr, SDValue &Abs);
 private:
 #include "i0GenDAGISel.inc"
 	const char* getPassName() const override;

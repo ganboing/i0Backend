@@ -88,4 +88,10 @@ void i0InstPrinter::printMemOperand(const MCInst *MI, int opNum,
 	printOperand(MI, opNum + 1, O);
 }
 
+void i0InstPrinter::printMemAbs(const MCInst *MI, int opNum, raw_ostream &O){
+	O << "[";
+	printOperand(MI, opNum, O);
+	O << "]";
+}
+
 }

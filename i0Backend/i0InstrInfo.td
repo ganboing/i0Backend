@@ -7,6 +7,9 @@ def imm_i32 : Operand<i32>{
 def imm_i8 : Operand<i8>{
   let PrintMethod = "printImm8";
 }
+def mem_abs64 : Operand<i64>{
+  let PrintMethod = "printMemAbs";
+}
 
 def SDT_i0_JmpLink : SDTypeProfile<0, 1, [SDTCisVT<0, iPTR>]>;
 def SDT_i0_Ret : SDTypeProfile<0, 1, [SDTCisInt<0>]>;
@@ -54,6 +57,7 @@ def calltarget : Operand<iPTR>{
 def imm_64 : ImmLeaf<i64, [{return true;}]>;
 def imm_32 : ImmLeaf<i32, [{return true;}]>;
 def imm_8 : ImmLeaf<i8, [{return true;}]>;
+//def mem_abs : ImmLeaf<iPTR, [{return true;}]>;
 
 class ArithLogicRRR64<bits<11> op, string asmstr, SDNode opnode>
 : i0InsAri64rrr<op, (outs GR64:$ra), (ins GR64:$rb, GR64:$rc),
@@ -85,7 +89,7 @@ class SetccIRR64<bits<11> op, string asmstr, PatFrag b_cond>
   !strconcat(asmstr, "\t$imm64, $rin, $rout"), [(set GR64:$rout, (i64 (b_cond imm_64:$imm64, GR64:$rin)))], NoItinerary>{
 }
 
-def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins imm_i64:$imm64), "mov \t$imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
+//def MOVir : i0InsMov64ir<(outs GR64:$reg), (ins imm_i64:$imm64), "mov \t$imm64, $reg", [(set GR64:$reg, imm_64:$imm64)], NoItinerary>;
 def MOVrr : i0InsMov64rr<(outs GR64:$rout), (ins GR64:$rin), "mov \t$rin, $rout", [], NoItinerary>;
 
 multiclass Setcc64<bits<11> op, string asmstr, PatFrag b_cond> {
@@ -151,43 +155,80 @@ def ir : BranchCC64IR<bopt, asmstr, b_cond>;
 }
 
 def addr : ComplexPattern<iPTR, 2, "SelectAddr", [frameindex], [SDNPWantParent]>;
-
-class LoadRM<Attr attr, string asmstr, bits<2> ext, PatFrag OpNode> :
-  i0InsLoadR64<attr, ext, (outs GR64:$rvalue), (ins mem:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
+def addrabs : ComplexPattern<iPTR, 1, "SelectAddrAbs", [imm], [SDNPWantParent]>;
+class LoadRMDisp<Attr attr, string asmstr, bits<2> ext, PatFrag OpNode> :
+  i0InsLoadR64Disp<attr, ext, (outs GR64:$rvalue), (ins mem:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
     [(set GR64:$rvalue, (OpNode addr:$addr))], NoItinerary> {
 }
 
-class StoreRM<Attr attr, string asmstr, PatFrag OpNode> :
+class LoadRMIndr<Attr attr, string asmstr, bits<2> ext, PatFrag OpNode> :
+  i0InsLoadR64Indr<attr, ext, (outs GR64:$rvalue), (ins mem_abs64:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
+    [(set GR64:$rvalue, (OpNode imm_64:$addr))], NoItinerary> {
+}
+
+class StoreRMDisp<Attr attr, string asmstr, PatFrag OpNode> :
   i0InsStoreR64<attr, (outs), (ins GR64:$rvalue, mem:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
     [(OpNode GR64:$rvalue, addr:$addr)], NoItinerary> {
 }
 
-def Storei64 :
+class StoreRMIndr<Attr attr, string asmstr, PatFrag OpNode> :
+  i0InsStoreR64<attr, (outs), (ins GR64:$rvalue, mem_abs64:$addr), !strconcat(asmstr, " \t$rvalue, $addr"),
+    [(OpNode GR64:$rvalue, imm_64:$addr)], NoItinerary> {
+}
+
+def Storei64Disp :
   i0InsStoreI64<(outs), (ins imm_i64:$imm64, mem:$addr), "storei64 $imm64, $addr",
     [(store imm_64:$imm64, addr:$addr)], NoItinerary> ;
 
-def Storei32 :
+def Storei32Disp :
   i0InsStoreI32<(outs), (ins imm_i32:$imm32, mem:$addr), "storei32 $imm32, $addr",
     [(store imm_32:$imm32, addr:$addr)], NoItinerary> ;
 
-def Storei8 :
+def Storei8Disp :
   i0InsStoreI8<(outs), (ins imm_i8:$imm8, mem:$addr), "storei8 $imm8, $addr",
     [(store imm_8:$imm8, addr:$addr)], NoItinerary> ;
 
+def Storei64Indr :
+  i0InsStoreI64<(outs), (ins imm_i64:$imm64, mem_abs64:$addr), "storei64 $imm64, $addr",
+    [(store imm_64:$imm64, imm_64:$addr)], NoItinerary> ;
+
+def Storei32Indr :
+  i0InsStoreI32<(outs), (ins imm_i32:$imm32, mem_abs64:$addr), "storei32 $imm32, $addr",
+    [(store imm_32:$imm32, imm_64:$addr)], NoItinerary> ;
+
+def Storei8Indr :
+  i0InsStoreI8<(outs), (ins imm_i8:$imm8, mem_abs64:$addr), "storei8 $imm8, $addr",
+    [(store imm_8:$imm8, imm_64:$addr)], NoItinerary> ;
+
+
 multiclass LoadR64 {
-  def _s8 : LoadRM<AttrB, "loadrs8", 1, sextloadi8>;
-  def _s32 : LoadRM<AttrF, "loadrs32", 1, sextloadi32>;
-  def _z8 : LoadRM<AttrB, "loadrz8", 0, zextloadi8>;
-  def _z32 : LoadRM<AttrF, "loadrz32", 0, zextloadi32>;
-  def _a8 : LoadRM<AttrB, "loadra8", 2, extloadi8>;
-  def _a32 : LoadRM<AttrF, "loadra32", 2, extloadi32>;
-  def _64 : LoadRM<AttrE, "loadr64", 0, load>;
+
+  def _s8_disp : LoadRMDisp<AttrB, "loadrs8", 1, sextloadi8>;
+  def _s32_disp : LoadRMDisp<AttrF, "loadrs32", 1, sextloadi32>;
+  def _z8_disp : LoadRMDisp<AttrB, "loadrz8", 0, zextloadi8>;
+  def _z32_disp : LoadRMDisp<AttrF, "loadrz32", 0, zextloadi32>;
+  def _a8_disp : LoadRMDisp<AttrB, "loadra8", 2, extloadi8>;
+  def _a32_disp : LoadRMDisp<AttrF, "loadra32", 2, extloadi32>;
+  def _64_disp : LoadRMDisp<AttrE, "loadr64", 0, load>;
+
+  def _s8_indr : LoadRMIndr<AttrB, "loadrs8", 1, sextloadi8>;
+  def _s32_indr : LoadRMIndr<AttrF, "loadrs32", 1, sextloadi32>;
+  def _z8_indr : LoadRMIndr<AttrB, "loadrz8", 0, zextloadi8>;
+  def _z32_indr : LoadRMIndr<AttrF, "loadrz32", 0, zextloadi32>;
+  def _a8_indr : LoadRMIndr<AttrB, "loadra8", 2, extloadi8>;
+  def _a32_indr : LoadRMIndr<AttrF, "loadra32", 2, extloadi32>;
+  def _64_indr : LoadRMIndr<AttrE, "loadr64", 0, load>;
 }
 
 multiclass StoreR64 {
-  def _8 : StoreRM<AttrB, "storer8", truncstorei8>;
-  def _32 : StoreRM<AttrF, "storer32", truncstorei32>;
-  def _64 : StoreRM<AttrE, "storer64", store>;
+
+  def _8_disp : StoreRMDisp<AttrB, "storer8", truncstorei8>;
+  def _32_disp : StoreRMDisp<AttrF, "storer32", truncstorei32>;
+  def _64_disp : StoreRMDisp<AttrE, "storer64", store>;
+
+  def _8_indr : StoreRMIndr<AttrB, "storer8", truncstorei8>;
+  def _32_indr : StoreRMIndr<AttrF, "storer32", truncstorei32>;
+  def _64_indr : StoreRMIndr<AttrE, "storer64", store>;
 }
 
 defm Loadr : LoadR64;

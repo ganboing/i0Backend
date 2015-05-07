@@ -176,7 +176,7 @@ class i0InsMov64rr<dag outs, dag ins, string asmstr, list<dag> pattern, InstrIti
   let addrm2 = AddrmReg;
 }
 
-class i0InsLoadR64<Attr attr, bits<2> extmode, dag outs, dag ins, string asmstr, list<dag> pattern, InstrItinClass itin>
+class i0InsLoadR64Disp<Attr attr, bits<2> extmode, dag outs, dag ins, string asmstr, list<dag> pattern, InstrItinClass itin>
 : i0InsAADM<0x22, outs, ins, asmstr, pattern, itin>
 {
   bits<3> rvalue;
@@ -187,6 +187,19 @@ class i0InsLoadR64<Attr attr, bits<2> extmode, dag outs, dag ins, string asmstr,
   let A1 = attr;
   let A2 = AttrE;
   let addrm1 = AddrmDisp;
+  let addrm2 = AddrmReg;
+}
+
+class i0InsLoadR64Indr<Attr attr, bits<2> extmode, dag outs, dag ins, string asmstr, list<dag> pattern, InstrItinClass itin>
+: i0InsAADM<0x22, outs, ins, asmstr, pattern, itin>
+{
+  bits<3> rvalue;
+  bits<64> addr;
+  bits<2> extmode;
+  let extmode = extmode;
+  let A1 = attr;
+  let A2 = AttrE;
+  let addrm1 = AddrmIndr;
   let addrm2 = AddrmReg;
 }
 

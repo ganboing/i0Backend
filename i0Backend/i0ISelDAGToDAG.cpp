@@ -41,9 +41,13 @@ bool i0DAGToDAGISel::SelectAddr(SDNode *Parent, SDValue Addr, SDValue &Base,
 		}
 	}
 
+	return false;
 	Base = Addr;
 	Offset = CurDAG->getTargetConstant(0, ValTy);
-	return true;
+}
+
+bool i0DAGToDAGISel::SelectAddrAbs(SDNode *Parent, SDValue Addr, SDValue &Abs){
+	return false;
 }
 
 /*bool  i0DAGToDAGISel::SelectInlineAsmMemoryOperand(const SDValue &Op, char ConstraintCode,

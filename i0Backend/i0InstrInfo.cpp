@@ -49,7 +49,7 @@ void i0InstrInfo::storeRegToStackSlot(MachineBasicBlock &MBB,
 	DebugLoc DL;
 	if (I != MBB.end())
 		DL = I->getDebugLoc();
-	BuildMI(MBB, I, DL, get(i0::Storer_64)).addReg(SrcReg,
+	BuildMI(MBB, I, DL, get(i0::Storer_64_disp)).addReg(SrcReg,
 			getKillRegState(isKill)).addFrameIndex(FI).addImm(0).addMemOperand(
 			MMO);
 
@@ -69,7 +69,7 @@ void i0InstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
 	DebugLoc DL;
 	if (I != MBB.end())
 		DL = I->getDebugLoc();
-	BuildMI(MBB, I, DL, get(i0::Loadr_64), DestReg).addFrameIndex(FI).addImm(
+	BuildMI(MBB, I, DL, get(i0::Loadr_64_disp), DestReg).addFrameIndex(FI).addImm(
 			0).addMemOperand(MMO);
 
 }

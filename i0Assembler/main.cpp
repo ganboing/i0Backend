@@ -16,11 +16,10 @@
 #include "../../../d-thinker/l0-bin-translator/src/external/sys_config.h"
 #define xstr(s) str(s)
 #define str(s) #s
-const char i0_startup[] = "\tmov $" xstr(PR_RUNNER_SB) ", r0q\n"
-"\tmov $" xstr(PR_RUNNER_SS) ", r1q\n"
-"\tloadr64 spq, (r0q)0\n"
-"\tloadr64 r0q, (r1q)0\n"
-"\tadd spq, r0q, spq\n"
+const char i0_startup[] =
+"\tloadr64 r0q, [" xstr(PR_RUNNER_SB) "]\n"
+"\tloadr64 r1q, [" xstr(PR_RUNNER_SS) "]\n"
+"\tadd r0q, r1q, spq\n"
 "\tmov $0, bpq\n"
 "\tmov @crt-return, lrq\n"
 "\tjmp @main\n"
@@ -96,7 +95,8 @@ void serialize_int(T b, inst_vector& out)
 template<typename T>
 void serialize_arr(T* b, T* be, inst_vector& out)
 {
-	for(T* i=b;i!=be;++i){
+	for (T* i = b; i != be; ++i)
+	{
 		serialize_int(*i, out);
 	}
 }
@@ -165,6 +165,29 @@ i0spec::i0regs decode_reg(const char* reg)
 	}
 	return i->second;
 }
+
+struct i0A: i0D
+{
+	uint64_t addr;
+	inline i0A(const char* _addr) :
+			addr(std::stoll(_addr, 0, 0))
+	{
+	}
+	virtual inline unsigned addrm() const
+	{
+		return ADDRM_ABSOLUTE;
+	}
+	virtual inline std::ostream&
+	dump(std::ostream& O) const
+	{
+		O << "abs:" << std::hex << addr << std::dec << ' ';
+		return O;
+	}
+	virtual inline void serialize(inst_vector& bytes) const
+	{
+		serialize_int(addr, bytes);
+	}
+};
 
 struct i0R: i0D
 {
@@ -275,6 +298,14 @@ i0oper get_oper(std::string&& oper, symref& symrefmap)
 		else if (oper.front() == '@')
 		{
 			return i0oper(new i0S(oper.c_str() + 1, symrefmap));
+		}
+		else if (oper.front() == '[')
+		{
+			if (oper.size() > 1 && oper.back() == ']')
+			{
+				oper[oper.size() - 1] = '\0';
+				return i0oper(new i0A(oper.c_str() + 1));
+			}
 		}
 		else
 		{
@@ -467,7 +498,7 @@ void encode_load(const std::string& op, std::istream& in, inst_vector& out,
 	}
 	i0oper oper2(get_oper(check_inner_oper(nexttoken(in)), refs)), oper1(
 			get_oper(nexttoken(in), refs));
-	assert(dynamic_cast<i0M*>(oper1.get()));
+	assert(dynamic_cast<i0M*>(oper1.get()) || dynamic_cast<i0A*>(oper1.get()));
 	assert(dynamic_cast<i0R*>(oper2.get()));
 	bytes.opcode = OP_CONV;
 	bytes.A1 = i->second.first;
@@ -507,7 +538,7 @@ void encode_store(const std::string& op, std::istream& in, inst_vector& out,
 	i0oper oper1(get_oper(check_inner_oper(nexttoken(in)), refs)), oper2(
 			get_oper(nexttoken(in), refs));
 	assert(dynamic_cast<i0R*>(oper1.get()) || dynamic_cast<i0I*>(oper1.get()));
-	assert(dynamic_cast<i0M*>(oper2.get()));
+	assert(dynamic_cast<i0M*>(oper2.get()) || dynamic_cast<i0A*>(oper2.get()));
 	bytes.opcode = OP_CONV;
 	bytes.A1 = ATTR_UE;
 	bytes.A2 = i->second;
@@ -692,8 +723,10 @@ void encode_bcc(const std::string& op, std::istream& in, inst_vector& out,
 	}
 }
 
-void rebase(symdef& defs){
-	for (auto i = defs.begin(), j = defs.end(); i != j; ++i){
+void rebase(symdef& defs)
+{
+	for (auto i = defs.begin(), j = defs.end(); i != j; ++i)
+	{
 		i->second += I0_CODE_BEGIN;
 	}
 }
@@ -717,9 +750,12 @@ void symfix(inst_vector& bytes, const symref& refs, const symdef& defs)
 	}
 }
 
-void dumpsym(std::ostream& out, symdef& defs){
-	for(auto i=defs.begin(), j=defs.end();i!=j;++i){\
-		out <<std::hex  << i->second << std::dec  << "    "<< i->first<< std::endl;
+void dumpsym(std::ostream& out, symdef& defs)
+{
+	for (auto i = defs.begin(), j = defs.end(); i != j; ++i)
+	{
+		out << std::hex << i->second << std::dec << "    " << i->first
+				<< std::endl;
 	}
 }
 
@@ -783,11 +819,14 @@ void emitinst(const std::string& token, std::istream& in, inst_vector& bytes,
 	i->second(token, in, bytes, refs);
 }
 
-void emitasciz(std::istream& in ,inst_vector& bytes){
+void emitasciz(std::istream& in, inst_vector& bytes)
+{
 	std::string s(nexttoken(in));
-	if(s.size() > 1){
-		if(s.front() == '\"' && s.back() == '\"'){
-			serialize_arr(s.c_str(), s.c_str()+s.size(), bytes);
+	if (s.size() > 1)
+	{
+		if (s.front() == '\"' && s.back() == '\"')
+		{
+			serialize_arr(s.c_str(), s.c_str() + s.size(), bytes);
 		}
 	}
 }
@@ -809,7 +848,7 @@ void dispatch(std::istream& in, inst_vector& bytes, symdef& defs, symref& refs)
 			{
 				std::cerr << "finished function\n";
 			}
-			else if(token == ".asciz")
+			else if (token == ".asciz")
 			{
 				emitasciz(in, bytes);
 			}
@@ -852,7 +891,8 @@ int main(int argc, char** argv)
 		isdebug = true;
 	}
 	std::ifstream file(argv[1]);
-	std::ofstream bin((std::string(argv[2]) + std::string(".bin")).c_str(), std::ios::binary);
+	std::ofstream bin((std::string(argv[2]) + std::string(".bin")).c_str(),
+			std::ios::binary);
 	std::ofstream binmap((std::string(argv[2]) + std::string(".map")).c_str());
 	std::stringstream header(i0_startup);
 	inst_vector bytes;
@@ -863,9 +903,10 @@ int main(int argc, char** argv)
 	dispatch(file, bytes, defs, refs);
 	rebase(defs);
 	symfix(bytes, refs, defs);
-	bin.write((char*)&bytes[0], bytes.size());
+	bin.write((char*) &bytes[0], bytes.size());
 	dumpsym(binmap, defs);
-	if(isdebug){
+	if (isdebug)
+	{
 		dumpsym(std::cerr, defs);
 	}
 	return 0;

@@ -8,11 +8,9 @@ main
 # BB#0:                                 # %entry
 	add 	spq, $-8, spq
 	mov 	spq, bpq
-	mov 	$4294967816, r1q
 LBB0_1:                                 # %while.cond
                                         # =>This Inner Loop Header: Depth=1
-	mov 	$4294967808, r0q
-	loadr64 	r0q, (r0q)0
+	loadr64 	r0q, [4294967808]
 	storer64 	r0q, (spq)0
 	beq 	r0q, $-1, @LBB0_6
 	jmp 	@LBB0_2
@@ -34,7 +32,7 @@ LBB0_4:                                 # %if.then
 LBB0_5:                                 # %if.end
                                         #   in Loop: Header=BB0_1 Depth=1
 	loadr64 	r0q, (spq)0
-	storer64 	r0q, (r1q)0
+	storer64 	r0q, [4294967816]
 	jmp 	@LBB0_1
 LBB0_6:                                 # %while.end
 	mov 	bpq, spq

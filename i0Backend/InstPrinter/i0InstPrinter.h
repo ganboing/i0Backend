@@ -18,7 +18,7 @@ private:
 	void printImm32(const MCInst* MI, unsigned OpNo, raw_ostream &O);
 	void printImm64(const MCInst* MI, unsigned OpNo, raw_ostream &O);
 	void printMemOperand(const MCInst *MI, int opNum, raw_ostream &O);
-
+	void printMemAbs(const MCInst *MI, int opNum, raw_ostream &O);
 };
 
 }
