@@ -19,10 +19,10 @@ c-=0x20;
 }
 }
 
-void test(void);
+/*void test(void);
 void test(void){
 long msg[] = {'e', 'q'};
 for(unsigned i=0;i<sizeof(msg);++i){
 *(long*)STDOUT = msg[i];
 }
-}
+}*/
