@@ -125,7 +125,7 @@ struct i0D
 struct i0I: i0D
 {
 	inline i0I(const char* _data) :
-			data(std::stoll(_data))
+			data(std::stoll(_data, 0, 0))
 	{
 	}
 	const int64_t data;
@@ -193,7 +193,7 @@ struct i0R: i0D
 struct i0M: i0R
 {
 	inline i0M(const char* _reg, const char* _offset) :
-			i0R(_reg), offset(std::stol(_offset))
+			i0R(_reg), offset(std::stol(_offset, 0, 0))
 	{
 	}
 	virtual inline unsigned addrm() const
