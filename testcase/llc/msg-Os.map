@@ -1,0 +1,11 @@
+8000000fe    LBB0_1
+80000018a    LBB0_2
+800000200    LBB1_1
+80000028c    LBB1_2
+8000001a9    Ltmp0
+8000002ab    Ltmp1
+8000000a5    crt-return
+8000000a7    main
+8000002ab    main.msg
+8000001a9    test2
+8000002b2    test2.msg

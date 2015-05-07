@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <memory>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include "../../../d-thinker/l0-bin-translator/src/codec.h"
@@ -45,8 +46,8 @@ const char i0_startup[] = "\tmov $" xstr(PR_RUNNER_SB) ", r0q\n"
 
 bool isdebug(false);
 typedef std::vector<unsigned char> inst_vector;
-typedef std::map<size_t, std::string> symref;
-typedef std::map<std::string, size_t> symdef;
+typedef std::map<uint64_t, std::string> symref;
+typedef std::map<std::string, uint64_t> symdef;
 typedef void
 encode_inst(const std::string&, std::istream&, inst_vector&, symref&);
 typedef std::map<const std::string, encode_inst> encoder_map;
@@ -89,6 +90,14 @@ void serialize_int(T b, inst_vector& out)
 	for (auto i = (unsigned char*) &b; i != (unsigned char*) (&b + 1); ++i)
 	{
 		out.push_back(*i);
+	}
+}
+
+template<typename T>
+void serialize_arr(T* b, T* be, inst_vector& out)
+{
+	for(T* i=b;i!=be;++i){
+		serialize_int(*i, out);
 	}
 }
 
@@ -683,6 +692,12 @@ void encode_bcc(const std::string& op, std::istream& in, inst_vector& out,
 	}
 }
 
+void rebase(symdef& defs){
+	for (auto i = defs.begin(), j = defs.end(); i != j; ++i){
+		i->second += I0_CODE_BEGIN;
+	}
+}
+
 void symfix(inst_vector& bytes, const symref& refs, const symdef& defs)
 {
 	for (auto i = refs.begin(), j = refs.end(); i != j; ++i)
@@ -696,9 +711,15 @@ void symfix(inst_vector& bytes, const symref& refs, const symdef& defs)
 		{
 			throw std::runtime_error("symbol not found");
 		}
-		uint64_t update = k->second + I0_CODE_BEGIN;
+		uint64_t update = k->second;
 		std::copy((unsigned char*) &update, (unsigned char*) (&update + 1),
 				&bytes[i->first]);
+	}
+}
+
+void dumpsym(std::ostream& out, symdef& defs){
+	for(auto i=defs.begin(), j=defs.end();i!=j;++i){\
+		out <<std::hex  << i->second << std::dec  << "    "<< i->first<< std::endl;
 	}
 }
 
@@ -762,6 +783,15 @@ void emitinst(const std::string& token, std::istream& in, inst_vector& bytes,
 	i->second(token, in, bytes, refs);
 }
 
+void emitasciz(std::istream& in ,inst_vector& bytes){
+	std::string s(nexttoken(in));
+	if(s.size() > 1){
+		if(s.front() == '\"' && s.back() == '\"'){
+			serialize_arr(s.c_str(), s.c_str()+s.size(), bytes);
+		}
+	}
+}
+
 void dispatch(std::istream& in, inst_vector& bytes, symdef& defs, symref& refs)
 {
 	std::string token;
@@ -778,6 +808,10 @@ void dispatch(std::istream& in, inst_vector& bytes, symdef& defs, symref& refs)
 			else if (token == ".endp")
 			{
 				std::cerr << "finished function\n";
+			}
+			else if(token == ".asciz")
+			{
+				emitasciz(in, bytes);
 			}
 			else if (token == ".i0_asm")
 			{
@@ -806,7 +840,7 @@ void dispatch(std::istream& in, inst_vector& bytes, symdef& defs, symref& refs)
 
 int main(int argc, char** argv)
 {
-	if (argc != 2)
+	if (argc != 3)
 	{
 		std::cerr << "invalid argument\n";
 		exit(-1);
@@ -818,6 +852,8 @@ int main(int argc, char** argv)
 		isdebug = true;
 	}
 	std::ifstream file(argv[1]);
+	std::ofstream bin((std::string(argv[2]) + std::string(".bin")).c_str(), std::ios::binary);
+	std::ofstream binmap((std::string(argv[2]) + std::string(".map")).c_str());
 	std::stringstream header(i0_startup);
 	inst_vector bytes;
 	symdef defs;
@@ -825,6 +861,12 @@ int main(int argc, char** argv)
 
 	dispatch(header, bytes, defs, refs);
 	dispatch(file, bytes, defs, refs);
+	rebase(defs);
 	symfix(bytes, refs, defs);
+	bin.write((char*)&bytes[0], bytes.size());
+	dumpsym(binmap, defs);
+	if(isdebug){
+		dumpsym(std::cerr, defs);
+	}
 	return 0;
 }

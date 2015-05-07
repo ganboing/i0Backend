@@ -1,10 +1,10 @@
 	.text
 	.i0_asm
 	.file	"msg-Os.bc"
-	.globl	test
-	.type	test,@function
-.proc                                   # @test
-test
+	.globl	main
+	.type	main,@function
+.proc                                   # @main
+main
 # BB#0:                                 # %entry
 	add 	spq, $0, spq
 	mov 	spq, bpq
@@ -12,7 +12,7 @@ test
 	mov 	$4294967816, r2q
 LBB0_1:                                 # %for.body
                                         # =>This Inner Loop Header: Depth=1
-	add 	@test.msg, r0q, r1q
+	add 	@main.msg, r0q, r1q
 	loadrs8 	r1q, (r1q)0
 	storer64 	r1q, (r2q)0
 	add 	r0q, $1, r0q
@@ -23,7 +23,7 @@ LBB0_2:                                 # %for.end
 	ret
 .endp 
 Ltmp0:
-	.size	test, Ltmp0-test
+	.size	main, Ltmp0-main
 
 	.globl	test2
 	.type	test2,@function
@@ -49,11 +49,11 @@ LBB1_2:                                 # %for.end
 Ltmp1:
 	.size	test2, Ltmp1-test2
 
-	.type	test.msg,@object        # @test.msg
+	.type	main.msg,@object        # @main.msg
 	.section	.rodata.str1.1,"aMS",@progbits,1
-test.msg:
+main.msg:
 	.asciz	"hello"
-	.size	test.msg, 6
+	.size	main.msg, 6
 
 	.type	test2.msg,@object       # @test2.msg
 test2.msg:
