@@ -3,6 +3,7 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetSubtargetInfo.h"
 
@@ -38,7 +39,7 @@ void i0FrameLowering::emitPrologue(MachineFunction &MF) const {
 	uint64_t stackSize = MFI->getStackSize();
 	BuildMI(MBB, I, DL, TII.get(i0::ADDrir), i0::SPq).addReg(i0::SPq).addImm(
 			-stackSize);
-	BuildMI(MBB, I, DL, TII.get(i0::MOVrr), i0::BPq).addReg(i0::SPq);
+	BuildMI(MBB, I, DL, TII.get(i0::MOVrr), i0::BPq).addReg(i0::SPq).setMIFlag(MachineInstr::FrameSetup);;
 
 }
 void i0FrameLowering::emitEpilogue(MachineFunction &MF,
@@ -50,4 +51,11 @@ void i0FrameLowering::emitEpilogue(MachineFunction &MF,
 	DebugLoc DL = MBBI->getDebugLoc();
 	BuildMI(MBB, MBBI, DL, TII.get(i0::MOVrr), i0::SPq).addReg(i0::BPq);
 }
+
+void i0FrameLowering::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
+        RegScavenger *RS) const {
+	MachineRegisterInfo& MRI = MF.getRegInfo();
+	MRI.setPhysRegUsed(i0::BPq);
 }
+}
+

@@ -16,6 +16,8 @@ public:
 	virtual void emitPrologue(MachineFunction &MF) const override;
 	virtual void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const
 			override;
+	void processFunctionBeforeCalleeSavedScan(MachineFunction &MF,RegScavenger *RS) const;
+
 	static const i0FrameLowering* create(const i0Subtarget&);
 };
 }
